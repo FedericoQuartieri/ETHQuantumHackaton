@@ -1,0 +1,4 @@
+bloqade==0.24.1
+kirin==0.0.1
+matplotlib==3.10.3
+qiskit==2.0.0
