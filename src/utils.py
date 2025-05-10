@@ -1,7 +1,7 @@
 from pathlib import Path
 from time import sleep
 from typing import Any
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
 
 from bloqade import qasm2
@@ -63,7 +63,7 @@ def QiskitDrawNotebook(qc):
     display(fig)
 
 
-import matplotlib.pyplot as plt
+
 
 def show_circuit(circ):
     # disegna il circuito e ottieni la figura
