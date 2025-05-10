@@ -1,57 +1,53 @@
+import utils
+from utils import sep_print
+
+import passes
+import metrics
+
 from bloqade import qasm2
 from bloqade.qasm2.parse.lowering import QASM2
 from bloqade.qasm2.passes import QASM2Py
-from bloqade.qasm2.emit import QASM2 # the QASM2 target
+from bloqade.qasm2.emit import QASM2 as QASM2Target # the QASM2 target
 from bloqade.qasm2.parse import pprint # the QASM2 pretty printer
 
-from pathlib import Path
-
-# path to wherever Jupyter is launched from
-project_root = Path.cwd()  
-
-# now build a path to .qasm files
-qasm_dir   = project_root / "baseline"
-qasm_file_paths = sorted(qasm_dir.glob("*.qasm"))
-
-print(qasm_dir)
-if not qasm_file_paths:
-    raise FileNotFoundError(f"No .qasm files found in {qasm_dir}")
-
-# parse & lower each one
-programs = {}
-for path in qasm_file_paths:
-    prog = QASM2(qasm2.main).loadfile(file=path)
-
-    """
-    reinterpret into Bloqade's parallelization-friendly intermediate representation. 
-    Similar behaviour could have been obtained by just using qasm2.extended above
-    """
-    QASM2Py(prog.dialects)(prog)
-    prog = prog.similar(qasm2.extended)
-
-    programs[Path(path).stem] = prog
-    print(f"→ {path} parsed & lowered: {prog}")
-
+programs = utils.importQASM()
 # `programs` now holds each file’s lowered IR under its filename-stem.
 
-target = QASM2(allow_parallel=True)
-program_ast = target.emit(programs["0.4"])
-pprint(program_ast)
+output_name = "1"
+prettyDebug = False
 
-input()
+target = QASM2Target(allow_parallel=True)
+program_ast = target.emit(programs[output_name])
+
+if prettyDebug:
+    sep_print("Non-translated qasm:\n")
+    pprint(program_ast)
 
 ###########################################################################
 
-import warnings
-warnings.filterwarnings("ignore")
+circuit = programs[output_name]
 
-from bloqade.qasm2.rewrite.native_gates import RydbergGateSetRewriteRule
-from kirin.rewrite import Walk
+passes.RydbergRewrite(circuit)
 
+if prettyDebug:
+    sep_print("Unparallelized QASMTarget:", sleepTimeSec=1)
+    pprint(target.emit(circuit))
 
-circuit = programs["0.4"]
+# Now apply parallelization
+passes.NativeParallelisationPass(circuit)
 
-Walk(RydbergGateSetRewriteRule(circuit.dialects)).rewrite(circuit.code);
+if prettyDebug:
+    sep_print("NativeParallelised circuit: ", sleepTimeSec=2)
+    pprint(target.emit(circuit))
+
+# Next output metrics
+
+metrics.print_gate_counts(target.emit(circuit))
+
+qc = utils.circuit_to_qiskit(circuit)
+
+fig = qc.draw(output="mpl", fold=120, scale=0.7)
+# display(fig)   # in a Jupyter notebook
 
 if __name__ == "__main__":
     pass
