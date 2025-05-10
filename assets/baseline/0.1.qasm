@@ -8,5 +8,5 @@ include "qelib1.inc";
 qreg q[3];
 
 
-cz q[0],q[1];
+cz q[1],q[0];
 cx q[2],q[1];

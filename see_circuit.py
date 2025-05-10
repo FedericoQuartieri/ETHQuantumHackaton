@@ -39,7 +39,7 @@ def qasm_to_png(qasm_path: str, output_dir: str, scale: float = 1.0) -> str:
     
     # Determine output filename
     base = os.path.splitext(os.path.basename(qasm_path))[0]
-    output_path = os.path.join(output_dir, f"{base}.png")
+    output_path = os.path.join(output_dir, f"out_img/{base}.png")
     
     # Save and close
     fig.savefig(output_path, bbox_inches='tight')
