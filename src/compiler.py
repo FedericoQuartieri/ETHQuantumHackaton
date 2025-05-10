@@ -49,5 +49,23 @@ qc = utils.circuit_to_qiskit(circuit)
 fig = qc.draw(output="mpl", fold=120, scale=0.7)
 # display(fig)   # in a Jupyter notebook
 
+# from bloqade.pyqrack import PyQrack
+# from collections import Counter
+
+# device = PyQrack(dynamic_qubits=True, pyqrack_options={"isBinaryDecisionTree": False})
+# results = device.multi_run(circuit, _shots=100)
+# print(results)
+# input("Press to continue")
+
+# def to_bitstrings(results):
+#     return Counter(map(lambda result:"".join(map(str, result)), results))
+
+# counts = to_bitstrings(results)
+
+# for key, value in counts.items():
+#     print(key, value)
+
+
+
 if __name__ == "__main__":
     pass

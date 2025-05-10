@@ -4,6 +4,7 @@ from typing import Any
 
 from bloqade import qasm2
 from bloqade.qasm2.parse.lowering import QASM2
+from bloqade.qasm2.emit import QASM2 as QASM2Target # the QASM2 target
 from bloqade.qasm2.passes import QASM2Py
 
 from kirin import ir
@@ -50,6 +51,6 @@ def importQASM() -> dict[str, Any]:
 # helper to go from Method → Qiskit
 def circuit_to_qiskit(method: ir.Method) -> QuantumCircuit:
     # emit OpenQASM2 text
-    qasm = QASM2().emit_str(method)
+    qasm = QASM2Target(allow_parallel=False).emit_str(method)
     # parse into a Qiskit circuit
     return QuantumCircuit.from_qasm_str(qasm)

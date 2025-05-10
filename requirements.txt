@@ -1,4 +1,4 @@
-bloqade==0.24.1
+bloqade==0.24
 cirq_core==1.5.0
 kirin==0.0.1
 matplotlib==3.10.3
