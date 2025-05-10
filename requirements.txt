@@ -1,7 +1,7 @@
 bloqade==0.24.1
-cirq==1.5.0
+cirq_core==1.5.0
 kirin==0.0.1
 matplotlib==3.10.3
 networkx==3.4.2
 numpy==2.2.5
-qiskit==1.2.1
+qiskit==2.0.0
