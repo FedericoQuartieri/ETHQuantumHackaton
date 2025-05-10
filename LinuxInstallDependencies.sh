@@ -1,5 +1,6 @@
 #[bash]
-##########
+##:wq
+#########
 sudo apt install python3.10-venv
 python3 -m venv env
 if [ $? -ne 0 ]; then
