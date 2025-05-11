@@ -1,3 +1,7 @@
+# Quantum Icing
+To run our compiler, look in the `src/compiler.py` file.
+
+
 General directions on the challenge statement can be found in the challenge .pdf file. Follow below for extra relevant information.
 
 ## Installing Bloqade and other packages 
