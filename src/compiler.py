@@ -13,9 +13,10 @@ from bloqade.qasm2.parse import pprint # the QASM2 pretty printer
 programs = utils.importQASM()
 # `programs` now holds each file’s lowered IR under its filename-stem.
 
-output_name = "1"
+output_name = "2"
 prettyDebug = False
 printSSA = False
+doPause = False
 
 doOurPasses = True
 
@@ -35,26 +36,28 @@ circuit: Method = programs[output_name]
 # if printSSA:
 #     circuit.print()
 # pprint(target.emit(circuit))
-print("Doing Remove2PiGates Pass...")
 
 if doOurPasses:
+    print("Doing Remove2PiGates Pass...")
     passes.Remove2PiGates(circuit.dialects)(circuit)
 # if printSSA:
 #     circuit.print()
 
-input("Continue...")
+if doPause:
+    input("Continue...")
 
 passes.RydbergRewrite(circuit)
 
 if printSSA:
     print("After Rydberg: ")
     circuit.print()
-print("Doing Remove2PiGates Pass after RydbergRewrite...")
 if doOurPasses:
+    print("Doing Remove2PiGates Pass after RydbergRewrite...")
     passes.Remove2PiGates(circuit.dialects)(circuit)
 if printSSA:
     circuit.print()
-input("Continue...")
+if doPause:
+    input("Continue...")
 
 if prettyDebug:
     sep_print("Unparallelized QASMTarget:", sleepTimeSec=1)
@@ -76,6 +79,10 @@ qc = utils.circuit_to_qiskit(circuit)
 fig = qc.draw(output="mpl", fold=120, scale=0.7)
 # display(fig)   # in a Jupyter notebook
 if printSSA:
+    circuit.print()
+
+ans = input("Print SSA? ")
+if ans == "y":
     circuit.print()
 
 """"
