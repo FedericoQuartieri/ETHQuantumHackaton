@@ -3,13 +3,12 @@ from utils import *
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 import numpy as np
+from qiskit.quantum_info import Statevector, partial_trace, state_fidelity
 
 def validate(qc1 : QuantumCircuit, qc2 : QuantumCircuit):
     # 2) Turn them into state-vectors
     sv1 = Statevector.from_instruction(qc1)
     sv2 = Statevector.from_instruction(qc2)
-    show_circuit(qc1)
-    show_circuit(qc2)
 
     # 3) Compute the overlap ⟨sv1|sv2⟩
     overlap = np.vdot(sv1.data, sv2.data)
@@ -21,19 +20,35 @@ def validate(qc1 : QuantumCircuit, qc2 : QuantumCircuit):
 
     return fidelity
 
+def validateAncilla(qc1,qc2):
+    psi = Statevector.from_instruction(qc1)
+    phi = Statevector.from_instruction(qc2)
+
+    sv_psi = Statevector(psi)
+    sv_phi = Statevector(phi)
+
+    psi = np.array(psi, dtype=complex)
+    phi = np.array(phi, dtype=complex)
+
+    # Trace out qubit index 3 (the fourth qubit) → two 3-qubit density matrices
+    rho_psi_3 = partial_trace(sv_psi, [3])
+    rho_phi_3 = partial_trace(sv_phi, [3])
+
+    # Compute the Uhlmann fidelity F(ρ,σ)
+    F_012 = state_fidelity(rho_psi_3, rho_phi_3)
+    print("Fidelity over qubits 0-2:", F_012)
+
+programs = importQASM()
 
 
-if __name__ == "__main__":
-    programs = importQASM()
-    #qc1 = circuit_to_qiskit(programs.get("7"))
-    qc2 = circuit_to_qiskit(programs.get("4_improved"))
-    show_circuit(qc2)
-    #validate(qc1, qc2)
+# qc1 = circuit_to_qiskit(programs.get("7"))
+# #show_circuit(qc1)
+# qc2 = circuit_to_qiskit(programs.get("1_improved"))
+
+# validateAncilla(qc1, qc2)
 
 
-    """
-parallel CZ: 5
-parallel U: 20
-other U: 12
-other CZ: 3
-    """
+qc1 = circuit_to_qiskit(programs.get("4"))
+qc2 = circuit_to_qiskit(programs.get("4_improved2"))
+validate(qc1, qc2)
+

@@ -1,5 +1,3 @@
-// Generated from Cirq v1.4.1
-
 OPENQASM 2.0;
 include "qelib1.inc";
 
@@ -17,8 +15,10 @@ h q[14];
 h q[15];
 h q[16];
 cx q[2],q[10];
-cx q[2],q[9];
+barrier q[2],q[10];
+cx q[10],q[9];
 cx q[2],q[8];
+barrier q[2],q[8],q[9],q[10];
 cx q[2],q[5];
 cx q[4],q[2];
 cx q[4],q[1];
