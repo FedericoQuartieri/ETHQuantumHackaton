@@ -15,7 +15,7 @@ from bloqade.qasm2.parse import pprint # the QASM2 pretty printer
 programs = utils.importQASM()
 # `programs` now holds each file’s lowered IR under its filename-stem.
 
-output_name = "1"           
+output_name = "4_improved"           
 # 1 is good
 # 2 is bad also with NOTHING (even just with RydbergRewrite)
 # 3 is bad with UToOpParallelise (commenting  nativeParallelise and with our passes brings to 1 fidelity)
@@ -111,7 +111,7 @@ if fidelity > 0.8 or True:
     filepath = f"../out_compiler/{output_name}.qasm" 
     print("Fidelity high enough. Exporting to QASM ", filepath)
     with open(filepath, "w") as out:
-        out.write(target.emit_str(circuit))
+        out.write(QASM2Target(allow_parallel=False).emit_str(circuit))
 else:
     print("Fidelity TOO LOW! Not exporting QASM")
     
