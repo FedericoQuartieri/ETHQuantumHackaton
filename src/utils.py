@@ -65,8 +65,6 @@ def QiskitDrawNotebook(qc):
     display(fig)
 
 
-
-
 def show_circuit(circ):
     # disegna il circuito e ottieni la figura
     fig = circ.draw(output='mpl', scale=1.0)

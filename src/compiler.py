@@ -15,6 +15,9 @@ programs = utils.importQASM()
 
 output_name = "1"
 prettyDebug = False
+printSSA = False
+
+doOurPasses = True
 
 target = QASM2Target(allow_parallel=True)
 program_ast = target.emit(programs[output_name])
@@ -25,9 +28,33 @@ if prettyDebug:
 
 ###########################################################################
 
-circuit = programs[output_name]
+from kirin.ir.method import Method
+
+circuit: Method = programs[output_name]
+
+# if printSSA:
+#     circuit.print()
+# pprint(target.emit(circuit))
+print("Doing Remove2PiGates Pass...")
+
+if doOurPasses:
+    passes.Remove2PiGates(circuit.dialects)(circuit)
+# if printSSA:
+#     circuit.print()
+
+input("Continue...")
 
 passes.RydbergRewrite(circuit)
+
+if printSSA:
+    print("After Rydberg: ")
+    circuit.print()
+print("Doing Remove2PiGates Pass after RydbergRewrite...")
+if doOurPasses:
+    passes.Remove2PiGates(circuit.dialects)(circuit)
+if printSSA:
+    circuit.print()
+input("Continue...")
 
 if prettyDebug:
     sep_print("Unparallelized QASMTarget:", sleepTimeSec=1)
@@ -48,22 +75,16 @@ qc = utils.circuit_to_qiskit(circuit)
 
 fig = qc.draw(output="mpl", fold=120, scale=0.7)
 # display(fig)   # in a Jupyter notebook
+if printSSA:
+    circuit.print()
 
-# from bloqade.pyqrack import PyQrack
-# from collections import Counter
+""""
+Hi, I tried to reinstall a python env with 3.12 and reinstalled the packages and it seems to be in a better state
+When I run pyqrack I get this 
+IMPORTANT: Did you remember to install OpenCL, if your Qrack version was built with OpenCL?
 
-# device = PyQrack(dynamic_qubits=True, pyqrack_options={"isBinaryDecisionTree": False})
-# results = device.multi_run(circuit, _shots=100)
-# print(results)
-# input("Press to continue")
-
-# def to_bitstrings(results):
-#     return Counter(map(lambda result:"".join(map(str, result)), results))
-
-# counts = to_bitstrings(results)
-
-# for key, value in counts.items():
-#     print(key, value)
+Since running pip install with other pyqrack packages was problematic, I'm thinking of installing OpenCL, how can I do that so the current
+"""
 
 
 
