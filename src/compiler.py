@@ -76,6 +76,7 @@ metrics.print_gate_counts(target.emit(circuit))
 
 qc = utils.circuit_to_qiskit(circuit)
 
+<<<<<<< Updated upstream
 fig = qc.draw(output="mpl", fold=120, scale=0.7)
 # display(fig)   # in a Jupyter notebook
 if printSSA:
@@ -92,7 +93,25 @@ IMPORTANT: Did you remember to install OpenCL, if your Qrack version was built w
 
 Since running pip install with other pyqrack packages was problematic, I'm thinking of installing OpenCL, how can I do that so the current
 """
+=======
+utils.show_circuit(qc)
 
+from bloqade.pyqrack import PyQrack
+from collections import Counter
+
+device = PyQrack(dynamic_qubits=True, pyqrack_options={"isBinaryDecisionTree": False})
+results = device.multi_run(circuit, _shots=100)
+print(results)
+input("Press to continue")
+
+def to_bitstrings(results):
+    return Counter(map(lambda result:"".join(map(str, result)), results))
+
+counts = to_bitstrings(results)
+>>>>>>> Stashed changes
+
+for key, value in counts.items():
+    print(key, value)
 
 
 if __name__ == "__main__":
