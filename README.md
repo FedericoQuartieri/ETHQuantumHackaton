@@ -1,6 +1,8 @@
 # Quantum Icing
 To run our compiler, look in the `src/compiler.py` file.
 
+We have made a `main.ipynb`  notebook, though matplotlib may give a few errors.
+
 
 General directions on the challenge statement can be found in the challenge .pdf file. Follow below for extra relevant information.
 
