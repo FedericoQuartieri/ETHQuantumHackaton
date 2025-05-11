@@ -61,12 +61,10 @@ class Remove2PiGates(Pass):
     def unsafe_run(self, method: ir.Method):
         print("Running unsafe run Remove2PiGates...")
 
-        result = Walk(Chain(
-                        Simplify2PiConst()
-                        )).rewrite(method.code)#.join(result)
+        result = Walk(Simplify2PiConst()).rewrite(method.code)
 
         frame, _ = const.Propagate(self.dialects).run_analysis(method)
-        result = Walk(WrapConst(frame)).rewrite(method.code) .join(result)
+        result = Walk(WrapConst(frame)).rewrite(method.code).join(result)
         result = Walk(FindAndSimplifyUGates()).rewrite(method.code).join(result)
         
         rule = Chain(
@@ -80,7 +78,7 @@ class Remove2PiGates(Pass):
 
 @dataclass
 class Simplify2PiConst(RewriteRule):
-    eps: float = 1e-10
+    eps: float = 1e-13 # IMPORTANT! Not all constants are 100% accurate on 2pi
     def mod(self, a, b):
         if a < b:
             b -= self.eps
@@ -89,10 +87,20 @@ class Simplify2PiConst(RewriteRule):
     def rewrite_Statement(self, node: ir.Statement) -> RewriteResult:
         if not isinstance(node, pyDialect.Constant):
             return RewriteResult()
-        if abs(node.value.unwrap()) < 2*math.pi - self.eps:
+        
+        periodicity = 2*math.pi
+        # Search for uses as theta
+        for use in node.result.uses:
+            stmt = use.stmt
+            if isinstance(stmt, uop.UGate):
+                if(stmt.theta == node.result):
+                    periodicity = 4*math.pi
+
+
+        if abs(node.value.unwrap()) < periodicity-self.eps:
             return RewriteResult()
         
-        #Not done on 6.28318530717958
+
 
         used_in_U = False
         uses = node.result.uses
@@ -102,7 +110,7 @@ class Simplify2PiConst(RewriteRule):
                 break
 
         if used_in_U:        
-            newVal = node.value.unwrap() - self.mod(node.value.unwrap(), 2*math.pi)
+            newVal = node.value.unwrap() - self.mod(node.value.unwrap(), periodicity)
             if newVal < 1e-10:
                 newVal = 0.0
             # print(f"From {node.value.unwrap()} to {newVal}")

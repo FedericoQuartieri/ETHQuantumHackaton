@@ -4,7 +4,7 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 import numpy as np
 
-def validate(qc1, qc2):
+def validate(qc1 : QuantumCircuit, qc2 : QuantumCircuit):
     # 2) Turn them into state-vectors
     sv1 = Statevector.from_instruction(qc1)
     sv2 = Statevector.from_instruction(qc2)
@@ -19,11 +19,21 @@ def validate(qc1, qc2):
     fidelity = abs(overlap)**2
     print("Fidelity =", fidelity)
 
+    return fidelity
 
 
 
-programs = importQASM()
-#qc1 = circuit_to_qiskit(programs.get("7"))
-qc2 = circuit_to_qiskit(programs.get("4_improved"))
-show_circuit(qc2)
-#validate(qc1, qc2)
+if __name__ == "__main__":
+    programs = importQASM()
+    #qc1 = circuit_to_qiskit(programs.get("7"))
+    qc2 = circuit_to_qiskit(programs.get("4_improved"))
+    show_circuit(qc2)
+    #validate(qc1, qc2)
+
+
+    """
+parallel CZ: 5
+parallel U: 20
+other U: 12
+other CZ: 3
+    """

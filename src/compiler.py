@@ -13,10 +13,18 @@ from bloqade.qasm2.parse import pprint # the QASM2 pretty printer
 programs = utils.importQASM()
 # `programs` now holds each file’s lowered IR under its filename-stem.
 
-output_name = "1"
+output_name = "1"           
+# 1 is bad with OUR PASSES ONLY
+# 2 is bad also with NOTHING (even just with RydbergRewrite)
+# 3 is bad also with NOTHING (commenting UToOpParallelise native brings to 1 fidelity)
+# 4 is perfect only MERGE
+# 4_improved is perfect only MERGE
+
 prettyDebug = False
 printSSA = False
 doPause = False
+
+doNativeParallelisation = True
 
 doOurPasses = True
 doOurPasses_merge = True
@@ -34,20 +42,12 @@ from kirin.ir.method import Method
 
 circuit: Method = programs[output_name]
 
-# if printSSA:
-#     circuit.print()
-# pprint(target.emit(circuit))
-
-if doOurPasses:
-    print("Doing Remove2PiGates Pass...")
-    passes.Remove2PiGates(circuit.dialects)(circuit)
-# if printSSA:
-#     circuit.print()
-
-if doPause:
-    input("Continue...")
+qc_initial = utils.circuit_to_qiskit(circuit)
 
 passes.RydbergRewrite(circuit)
+
+print("Metrics after RydbergRewrite: ")
+metrics.print_gate_counts(target.emit(circuit))
 
 if printSSA:
     print("After Rydberg: ")
@@ -83,27 +83,34 @@ if prettyDebug:
     pprint(target.emit(circuit))
 
 # Now apply parallelization
-passes.NativeParallelisationPass(circuit)
+if doNativeParallelisation:
+    passes.NativeParallelisationPass(circuit)
+    print("Metrics after nativeParallelise: ")
+    metrics.print_gate_counts(target.emit(circuit))
 
 if prettyDebug:
     sep_print("NativeParallelised circuit: ", sleepTimeSec=2)
-    pprint(target.emit(circuit))
+    pprint(QASM2Target(allow_parallel=False).emit(circuit))
 
 # Next output metrics
 
-print("Metrics after nativeParallelise: ")
-metrics.print_gate_counts(target.emit(circuit))
-
-qc = utils.circuit_to_qiskit(circuit)
 
 if printSSA:
     circuit.print()
 
-ans = input("Print SSA? ")
-if ans == "y":
-    circuit.print()
+qc_final = utils.circuit_to_qiskit(circuit)
 
-utils.show_circuit(qc)
+from validate import validate
+fidelity = validate(qc_initial, qc_final)
+
+if fidelity > 0.8:
+    filepath = f"../out_compiler/{output_name}.qasm" 
+    print("Fidelity high enough. Exporting to QASM ", filepath)
+    with open(filepath, "w") as out:
+        out.write(target.emit_str(circuit))
+else:
+    print("Fidelity TOO LOW! Not exporting QASM")
+    
 
 if __name__ == "__main__":
     pass
