@@ -4,6 +4,7 @@ from utils import sep_print
 import passes
 import metrics
 from validate import validate
+from kirin.ir.method import Method
 
 from bloqade import qasm2
 from bloqade.qasm2.parse.lowering import QASM2
@@ -14,22 +15,22 @@ from bloqade.qasm2.parse import pprint # the QASM2 pretty printer
 programs = utils.importQASM()
 # `programs` now holds each file’s lowered IR under its filename-stem.
 
-output_name = "2"           
-# 1 is bad with OUR PASSES ONLY
+output_name = "1"           
+# 1 is good
 # 2 is bad also with NOTHING (even just with RydbergRewrite)
-# 3 is bad also with NOTHING (commenting UToOpParallelise native brings to 1 fidelity)
-# 4 is perfect only MERGE
-# 4_improved is perfect only MERGE
+# 3 is bad with UToOpParallelise (commenting  nativeParallelise and with our passes brings to 1 fidelity)
+# 4 is perfect
+# 4_improved is perfect 
 
 prettyDebug = False
 printSSA = False
 doPause = False
 
 doRydberg = True
-doNativeParallelisation = False
+doNativeParallelisation = True
 
 doOurPasses = False
-doOurPasses_merge = False
+doOurPasses_merge = True
 
 target = QASM2Target(allow_parallel=True)
 program_ast = target.emit(programs[output_name])
@@ -40,11 +41,8 @@ if prettyDebug:
 
 ###########################################################################
 
-from kirin.ir.method import Method
 
 circuit: Method = programs[output_name]
-
-# validate(utils.circuit_to_qiskit(programs["3_improved"]), utils.circuit_to_qiskit(programs["3"]))
 
 qc_initial = utils.circuit_to_qiskit(circuit)
 
@@ -57,6 +55,8 @@ metrics.print_gate_counts(target.emit(circuit))
 if printSSA:
     print("After Rydberg: ")
     circuit.print()
+
+    
 if doOurPasses:
     print("Doing Remove2PiGates Pass after RydbergRewrite...")
     passes.Remove2PiGates(circuit.dialects)(circuit)

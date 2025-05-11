@@ -1,7 +1,7 @@
 from pathlib import Path
 from time import sleep
 from typing import Any
-import matplotlib.pyplot as plt
+##import matplotlib.pyplot as plt
 
 
 from bloqade import qasm2
@@ -65,16 +65,16 @@ def QiskitDrawNotebook(qc):
     display(fig)
 
 
-def show_circuit(circ):
-    # disegna il circuito e ottieni la figura
-    fig = circ.draw(output='mpl', scale=1.0)
+# def show_circuit(circ):
+#     # disegna il circuito e ottieni la figura
+#     fig = circ.draw(output='mpl', scale=1.0)
 
-    # prova a massimizzare, ma non rompere se non c'è finestra GUI
-    try:
-        mgr = plt.get_current_fig_manager()
-        mgr.window.showMaximized()
-    except Exception:
-        pass
+#     # prova a massimizzare, ma non rompere se non c'è finestra GUI
+#     try:
+#         mgr = plt.get_current_fig_manager()
+#         mgr.window.showMaximized()
+#     except Exception:
+#         pass
 
-    # mostra la figura
-    plt.show()
+#     # mostra la figura
+#     plt.show()

@@ -30,8 +30,6 @@ def NativeParallelisationPass(circuit):
 
 # TODO: Pass that substitutes localGate on > 1/2 qubits with 1 global + 1 local inverse on < 1/2 qubits 
 
-# TODO: !!! Merge successive U3 (sum the angles?? Prob not) (Do the math here)
-
 # TODO: CNOT Ladder to log (use ancilla qubits => HARD)
 
 from dataclasses import field, dataclass
