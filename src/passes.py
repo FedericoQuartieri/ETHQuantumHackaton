@@ -32,7 +32,8 @@ def NativeParallelisationPass(circuit):
 
 # TODO: !!! Merge successive U3 (sum the angles?? Prob not) (Do the math here)
 
-# TODO: CNOT Ladder to log (use ancilla qubits)
+# TODO: CNOT Ladder to log (use ancilla qubits => HARD)
+
 from dataclasses import field, dataclass
 import math
 
@@ -52,22 +53,21 @@ from kirin.analysis import const
 from bloqade.qasm2.dialects import core, uop
 from kirin.dialects import py as pyDialect
 
+from computeProductMatrix import computeProductMatrix
+
 @dataclass
 class Remove2PiGates(Pass):
 
     def unsafe_run(self, method: ir.Method):
-        print("Running unsafe run 2PIGAtes")
-        # result = Walk(RaiseRegisterRule()).rewrite(method.code)
+        print("Running unsafe run Remove2PiGates...")
 
         result = Walk(Chain(
                         Simplify2PiConst()
                         )).rewrite(method.code)#.join(result)
 
         frame, _ = const.Propagate(self.dialects).run_analysis(method)
-        result = Walk(WrapConst(frame)).rewrite(method.code)# .join(result)
+        result = Walk(WrapConst(frame)).rewrite(method.code) .join(result)
         result = Walk(FindAndSimplifyUGates()).rewrite(method.code).join(result)
-
-        # result = Fixpoint(Walk(ConstantFold())).rewrite(method.code).join(result)
         
         rule = Chain(
             ConstantFold(),
@@ -105,9 +105,9 @@ class Simplify2PiConst(RewriteRule):
             newVal = node.value.unwrap() - self.mod(node.value.unwrap(), 2*math.pi)
             if newVal < 1e-10:
                 newVal = 0.0
-            print(f"From {node.value.unwrap()} to {newVal}")
+            # print(f"From {node.value.unwrap()} to {newVal}")
             newStmt = pyDialect.Constant(newVal)
-            print(newStmt.print_str())
+            # print(newStmt.print_str())
             node.replace_by(newStmt)
             return RewriteResult(has_done_something=True)
         
@@ -130,3 +130,134 @@ class FindAndSimplifyUGates(RewriteRule):
         return RewriteResult(has_done_something=True)
 
 
+class MergeConsecutiveU(Pass):
+    def unsafe_run(self, method: ir.Method):
+        print("Running unsafe run MergeConsecutiveU")
+
+        loop_res = RewriteResult(has_done_something=True)
+        while loop_res.has_done_something:
+            frame, _ = const.Propagate(self.dialects).run_analysis(method)
+            Walk(WrapConst(frame)).rewrite(method.code)#.join(result)
+            loop_res = Walk(UniteU3()).rewrite(method.code)
+            
+        result = Walk(Simplify2PiConst()).rewrite(method.code)#.join(result)
+        frame, _ = const.Propagate(self.dialects).run_analysis(method)
+        result = Walk(WrapConst(frame)).rewrite(method.code)# .join(result)
+        result = Walk(FindAndSimplifyUGates()).rewrite(method.code).join(result)
+
+        rule = Chain(
+            ConstantFold(),
+            DeadCodeElimination(),
+            CommonSubexpressionElimination(),
+        )
+        result = Fixpoint(Walk(rule)).rewrite(method.code).join(result)
+        return result
+    
+    
+class UniteU3(RewriteRule):
+    def rewrite_Statement(self, node: ir.Statement) -> RewriteResult:
+        if not isinstance(node, uop.UGate):
+            return RewriteResult()
+
+        # scan for the very next U on the same qubit
+        in_q = node.args[0]
+        scan = node.next_stmt
+        partner = None
+        while scan:
+            if in_q in scan.args:
+                if isinstance(scan, uop.UGate):
+                    partner = scan
+                break
+            scan = scan.next_stmt
+        if partner is None:
+            return RewriteResult()
+
+        # pull out the old angles
+        θ1,φ1,λ1 = (node.theta.hints["const"].data,
+                    node.phi.  hints["const"].data,
+                    node.lam.  hints["const"].data)
+        θ2,φ2,λ2 = (partner.theta.hints["const"].data,
+                    partner.phi.  hints["const"].data,
+                    partner.lam.  hints["const"].data)
+
+        # compute the fused triple
+        newθ, newφ, newλ = computeProductMatrix(θ1,φ1,λ1, θ2,φ2,λ2)
+
+        # — now do one atomic replacement —
+        # 1) build the new Constant stmts
+        cθ = pyDialect.Constant(newθ.real)
+        cφ = pyDialect.Constant(newφ)
+        cλ = pyDialect.Constant(newλ)
+        # 2) insert them BEFORE the old node so they dominate it
+        cθ.insert_before(node)
+        cφ.insert_before(node)
+        cλ.insert_before(node)
+        # 3) build your merged UGate
+        merged = uop.UGate(in_q, cθ.result, cφ.result, cλ.result)
+        # 4) splice it in, nuking the old node
+        node.replace_by(merged)
+        # 5) delete the partner
+        partner.delete()
+
+        return RewriteResult(has_done_something=True)
+
+"""   
+    def rewrite_Statement(self, node: ir.Statement) -> RewriteResult:
+        if not isinstance(node, uop.UGate):
+            return RewriteResult()
+        
+        targ = node.args[0]
+        usesOfTarg = targ.uses
+        
+        firstUse : uop.UGate = None
+        
+        print("RUN UniteU3 on ", node.print_str())
+        print("Th hints = ", node.theta.hints)
+        for use in usesOfTarg:
+            if isinstance(use.stmt, uop.UGate) and use != node:
+                print("Check true use.owner==node.owner: ", use.stmt.args[0].owner == targ.owner)
+                firstUse = use.stmt
+                break
+        
+        if firstUse is None:
+            return RewriteResult()
+        
+        # Check if path node -> firstUse is free of other gates
+        stmt = node.next_stmt
+        if stmt is None:
+            return RewriteResult()
+        
+        while stmt is not None and not stmt.is_equal(firstUse): # Assume firstUse is successor of node
+            for use in usesOfTarg:
+                if stmt == use.stmt:
+                    print("Found a use of targ (before firstUse in a UGate) at ", stmt.print_str())
+                    return RewriteResult()
+            stmt = stmt.next_stmt
+        # Now we traversed node -> firstUse, no other gate is messing with target qubit
+
+        print("Continuin3")
+        mergedAngles = computeProductMatrix(
+                    node.theta.hints["const"].data, 
+                    node.phi.hints["const"].data, 
+                    node.lam.hints["const"].data, 
+                    firstUse.theta.hints["const"].data, 
+                    firstUse.phi.hints["const"].data, 
+                    firstUse.lam.hints["const"].data
+                )
+
+        # Print theta complex for validation
+        print("MergedTheta = ", mergedAngles[0])
+
+        newConstTheta = pyDialect.Constant(mergedAngles[0].real)
+        newConstPhi = pyDialect.Constant(mergedAngles[1])
+        newConstLam = pyDialect.Constant(mergedAngles[2])
+        newUGate = uop.UGate(targ, newConstTheta.result, newConstPhi.result, newConstLam.result)
+
+        newConstTheta.insert_before(node)
+        newConstPhi.insert_before(node)
+        newConstLam.insert_before(node)
+        node.replace_by(newUGate)
+        firstUse.delete()
+
+        return RewriteResult(has_done_something=True)
+"""

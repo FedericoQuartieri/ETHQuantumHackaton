@@ -29,18 +29,30 @@ def computeProductMatrix(theta1, phi1, lam1, theta2, phi2, lam2):
     c10 = a10*b00 + a11*b10
     c11 = a10*b01 + a11*b11
 
-    c00 = a00*b00 + a01*b10
+    # Why do this twice?
+    c00 = a00*b00 + a01*b10 
     c01 = a00*b10 + a01*b11
     c10 = a10*b00 + a11*b10
     c11 = a10*b01 + a11*b11
 
+    # globPhase = -cmath.phase(c00)
+    # c01 *= cmath.exp(globPhase*1j)
+    # c10 *= cmath.exp(globPhase*1j)
+    # c11 *= cmath.exp(globPhase*1j)
+
     theta3 = 2*cmath.acos(c00)
-    phi3 = cmath.phase(c10/cmath.sin(theta3/2))
-    lam3 = cmath.phase(-c01/cmath.sin(theta3/2))
+    sinTheta3 = cmath.sin(theta3/2)
+    if sinTheta3 != 0: 
+        phi3 = cmath.phase(c10/sinTheta3)
+        lam3 = cmath.phase(-c01/sinTheta3)
+    else:
+        sum_phi_lam3 = cmath.phase(c11/cmath.cos(theta3/2))
+        phi3 = 0.0
+        lam3 = sum_phi_lam3
 
 
-    print(theta3)
-    print(phi3)
-    print(lam3)
+    # print(theta3) # Issue! theta is COMPLEX, I need REAL angle
+    # print(phi3)
+    # print(lam3)
 
     return(theta3, phi3, lam3)

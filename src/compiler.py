@@ -13,12 +13,13 @@ from bloqade.qasm2.parse import pprint # the QASM2 pretty printer
 programs = utils.importQASM()
 # `programs` now holds each file’s lowered IR under its filename-stem.
 
-output_name = "2"
+output_name = "1"
 prettyDebug = False
 printSSA = False
 doPause = False
 
 doOurPasses = True
+doOurPasses_merge = True
 
 target = QASM2Target(allow_parallel=True)
 program_ast = target.emit(programs[output_name])
@@ -59,6 +60,24 @@ if printSSA:
 if doPause:
     input("Continue...")
 
+
+if doOurPasses_merge:
+    print("Metrics before MERGE: ")
+    metrics.print_gate_counts(target.emit(circuit))
+
+    print("Merging ConsecutiveU")
+    passes.MergeConsecutiveU(circuit.dialects)(circuit)
+
+    print("Metrics after MERGE: ")
+    metrics.print_gate_counts(target.emit(circuit))
+if printSSA:
+    print("circuit after MERGE: ")
+    circuit.print()
+    print()
+if doPause:
+    input("Continue...")
+
+
 if prettyDebug:
     sep_print("Unparallelized QASMTarget:", sleepTimeSec=1)
     pprint(target.emit(circuit))
@@ -72,13 +91,11 @@ if prettyDebug:
 
 # Next output metrics
 
+print("Metrics after nativeParallelise: ")
 metrics.print_gate_counts(target.emit(circuit))
 
 qc = utils.circuit_to_qiskit(circuit)
 
-<<<<<<< Updated upstream
-fig = qc.draw(output="mpl", fold=120, scale=0.7)
-# display(fig)   # in a Jupyter notebook
 if printSSA:
     circuit.print()
 
@@ -86,33 +103,7 @@ ans = input("Print SSA? ")
 if ans == "y":
     circuit.print()
 
-""""
-Hi, I tried to reinstall a python env with 3.12 and reinstalled the packages and it seems to be in a better state
-When I run pyqrack I get this 
-IMPORTANT: Did you remember to install OpenCL, if your Qrack version was built with OpenCL?
-
-Since running pip install with other pyqrack packages was problematic, I'm thinking of installing OpenCL, how can I do that so the current
-"""
-=======
 utils.show_circuit(qc)
-
-from bloqade.pyqrack import PyQrack
-from collections import Counter
-
-device = PyQrack(dynamic_qubits=True, pyqrack_options={"isBinaryDecisionTree": False})
-results = device.multi_run(circuit, _shots=100)
-print(results)
-input("Press to continue")
-
-def to_bitstrings(results):
-    return Counter(map(lambda result:"".join(map(str, result)), results))
-
-counts = to_bitstrings(results)
->>>>>>> Stashed changes
-
-for key, value in counts.items():
-    print(key, value)
-
 
 if __name__ == "__main__":
     pass
