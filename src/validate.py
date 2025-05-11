@@ -48,7 +48,7 @@ programs = importQASM()
 # validateAncilla(qc1, qc2)
 
 
-qc1 = circuit_to_qiskit(programs.get("4"))
-qc2 = circuit_to_qiskit(programs.get("4_improved2"))
+qc1 = circuit_to_qiskit(programs.get("3"))
+qc2 = circuit_to_qiskit(programs.get("3_improved"))
 validate(qc1, qc2)
 
