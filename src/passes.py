@@ -50,7 +50,7 @@ from bloqade.qasm2.rewrite import RaiseRegisterRule
 
 from kirin import ir
 from kirin.analysis import const
-from bloqade.qasm2.dialects import core, uop
+from bloqade.qasm2.dialects import core, uop, parallel
 from kirin.dialects import py as pyDialect
 
 from computeProductMatrix import computeProductMatrix
@@ -269,3 +269,11 @@ class UniteU3(RewriteRule):
 
         return RewriteResult(has_done_something=True)
 """
+
+
+class PostParallel_GlobalExtraction(RewriteRule):
+    def rewrite_Statement(self, node: ir.Statement):
+        if not isinstance(node, parallel.UGate):
+            return RewriteResult()
+        
+        totalQubits = 0

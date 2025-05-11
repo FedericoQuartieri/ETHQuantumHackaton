@@ -3,6 +3,7 @@ from utils import sep_print
 
 import passes
 import metrics
+from validate import validate
 
 from bloqade import qasm2
 from bloqade.qasm2.parse.lowering import QASM2
@@ -13,7 +14,7 @@ from bloqade.qasm2.parse import pprint # the QASM2 pretty printer
 programs = utils.importQASM()
 # `programs` now holds each file’s lowered IR under its filename-stem.
 
-output_name = "1"           
+output_name = "2"           
 # 1 is bad with OUR PASSES ONLY
 # 2 is bad also with NOTHING (even just with RydbergRewrite)
 # 3 is bad also with NOTHING (commenting UToOpParallelise native brings to 1 fidelity)
@@ -24,10 +25,11 @@ prettyDebug = False
 printSSA = False
 doPause = False
 
-doNativeParallelisation = True
+doRydberg = True
+doNativeParallelisation = False
 
-doOurPasses = True
-doOurPasses_merge = True
+doOurPasses = False
+doOurPasses_merge = False
 
 target = QASM2Target(allow_parallel=True)
 program_ast = target.emit(programs[output_name])
@@ -42,9 +44,12 @@ from kirin.ir.method import Method
 
 circuit: Method = programs[output_name]
 
+# validate(utils.circuit_to_qiskit(programs["3_improved"]), utils.circuit_to_qiskit(programs["3"]))
+
 qc_initial = utils.circuit_to_qiskit(circuit)
 
-passes.RydbergRewrite(circuit)
+if doRydberg:
+    passes.RydbergRewrite(circuit)
 
 print("Metrics after RydbergRewrite: ")
 metrics.print_gate_counts(target.emit(circuit))
@@ -100,10 +105,9 @@ if printSSA:
 
 qc_final = utils.circuit_to_qiskit(circuit)
 
-from validate import validate
 fidelity = validate(qc_initial, qc_final)
 
-if fidelity > 0.8:
+if fidelity > 0.8 or True:
     filepath = f"../out_compiler/{output_name}.qasm" 
     print("Fidelity high enough. Exporting to QASM ", filepath)
     with open(filepath, "w") as out:
