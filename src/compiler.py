@@ -11,7 +11,7 @@ from bloqade.qasm2.emit import QASM2 as QASM2Target # the QASM2 target
 from bloqade.qasm2.parse import pprint # the QASM2 pretty printer
 
 prettyDebug = False  # if true print the QASM-style circuits at each optimization step
-printSSA = False    # if true prints the raw IR of kirin
+printSSA = True    # if true prints the raw IR of kirin
 printMetrics = False
 doPause = False     # if true pauses until input at each step
 
