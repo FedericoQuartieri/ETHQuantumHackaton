@@ -31,24 +31,24 @@ def validateAncilla(qc1,qc2):
     phi = np.array(phi, dtype=complex)
 
     # Trace out qubit index 3 (the fourth qubit) → two 3-qubit density matrices
-    rho_psi_3 = partial_trace(sv_psi, [3])
+    #rho_psi_3 = partial_trace(sv_psi, [])
     rho_phi_3 = partial_trace(sv_phi, [3])
 
     # Compute the Uhlmann fidelity F(ρ,σ)
-    F_012 = state_fidelity(rho_psi_3, rho_phi_3)
+    F_012 = state_fidelity(psi, rho_phi_3)
     print("Fidelity over qubits 0-2:", F_012)
 
-programs = importQASM()
 
+if __name__ == "__main__":
+    programs = importQASM("../inputs")
 
-# qc1 = circuit_to_qiskit(programs.get("7"))
-# #show_circuit(qc1)
-# qc2 = circuit_to_qiskit(programs.get("1_improved"))
+    qc1 = circuit_to_qiskit(programs.get("1"))
+    qc2 = circuit_to_qiskit(programs.get("1_improved"))
+    print("Validate 1 <-> 1_improved...")
+    validateAncilla(qc1, qc2)
 
-# validateAncilla(qc1, qc2)
-
-
-qc1 = circuit_to_qiskit(programs.get("3"))
-qc2 = circuit_to_qiskit(programs.get("3_improved"))
-validate(qc1, qc2)
+    qc1 = circuit_to_qiskit(programs.get("3"))
+    qc2 = circuit_to_qiskit(programs.get("3_improved"))
+    print("Validate 3 <-> 3_improved...")
+    validate(qc1, qc2)
 

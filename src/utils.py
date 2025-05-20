@@ -22,12 +22,12 @@ def sep_print(msg, sleepTimeSec: int = 0):
     if sleepTimeSec > 0:
         sleep(sleepTimeSec)
 
-def importQASM() -> dict[str, Any]:
+def importQASM(input_dir) -> dict[str, Any]:
     # path to root is launched from
-    project_root = Path.cwd().parent  
+    exec_root = Path.cwd()  
 
     # now build a path to .qasm files
-    qasm_dir   = project_root / "assets/baseline"
+    qasm_dir   = exec_root / input_dir
     qasm_file_paths = sorted(qasm_dir.glob("*.qasm"))
 
     print(qasm_dir)

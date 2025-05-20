@@ -1,19 +1,56 @@
 import utils
 from utils import sep_print
+import sys, os
 
 import passes
 import metrics
-from validate import validate
+from validate import validate, validateAncilla
 from kirin.ir.method import Method
 
-from bloqade import qasm2
-from bloqade.qasm2.parse.lowering import QASM2
-from bloqade.qasm2.passes import QASM2Py
 from bloqade.qasm2.emit import QASM2 as QASM2Target # the QASM2 target
 from bloqade.qasm2.parse import pprint # the QASM2 pretty printer
 
-if __name__ == "__main__":
-    programs = utils.importQASM()
+prettyDebug = False  # if true print the QASM-style circuits at each optimization step
+printSSA = False    # if true prints the raw IR of kirin
+printMetrics = False
+doPause = False     # if true pauses until input at each step
+
+doRydberg = True    # if true translates gates to the native set using the native rewrite pass
+doNativeParallelisation = True  # if true applies the parallelisation with native UOpToParallelise
+
+doOurPasses = False         # if true apply our passes also outside the merge
+doOurPasses_merge = True    # if true apply the merge pass
+
+def main():
+    if len(sys.argv) < 3:
+        print("Usage: py compiler.py <input_folder> <output_folder>")
+        print("The program will optimize all circuits in .qasm files in the input folder, then output the optimized version in the output folder.")
+        exit(-1)
+
+    input_folder = sys.argv[1]
+    output_folder = sys.argv[2]
+
+    if not output_folder.endswith("/"):
+        output_folder += "/"
+
+    programs = utils.importQASM(input_folder)
+    for name, circuit in programs.items():
+        #if not "1" in name: continue
+
+        optimize_qasm(circuit, output_folder, name+".qasm")
+        if name.endswith("_improved"):
+            orgName = name.split("_")[0]
+            qcOrg = utils.circuit_to_qiskit(programs[orgName])
+            qcImprov = utils.circuit_to_qiskit(circuit)
+            print(f"Validating {name} against its original version...")
+            if orgName == "1":
+                validateAncilla(qcOrg, qcImprov)
+            else: 
+                validate(qcOrg, qcImprov)
+        print()
+    
+
+def optimize_qasm(circuit: Method, output_folder, output_name):
     # `programs` holds each file’s lowered IR under its filename-stem.
 
     # 1 is good
@@ -21,23 +58,13 @@ if __name__ == "__main__":
     # 3 is bad with UToOpParallelise (commenting  nativeParallelise and with our passes brings to 1 fidelity)
     # 4 is perfect
     # 4_improved is perfect 
-    output_name = "1"    # name of the circuit to be compiled-optimized       
 
     ###################################
     # The following flags govern the execution flow.
 
-    prettyDebug = False  # if true print the QASM-style circuits at each optimization step
-    printSSA = False    # if true prints the raw IR of kirin
-    doPause = False     # if true pauses until input at each step
-
-    doRydberg = True    # if true translates gates to the native set using the native rewrite pass
-    doNativeParallelisation = True  # if true applies the parallelisation with native UOpToParallelise
-
-    doOurPasses = False         # if true apply our passes also outside the merge
-    doOurPasses_merge = True    # if true apply the merge pass
-
-    target = QASM2Target(allow_parallel=True)
-    program_ast = target.emit(programs[output_name])
+    targetParallel = QASM2Target(allow_parallel=True)
+    targetSequential = QASM2Target(allow_parallel=False)
+    program_ast = targetParallel.emit(circuit)
 
     if prettyDebug:
         sep_print("Non-translated qasm:\n")
@@ -45,16 +72,13 @@ if __name__ == "__main__":
 
     ###########################################################################
 
-
-    circuit: Method = programs[output_name]
-
     qc_initial = utils.circuit_to_qiskit(circuit)
 
     if doRydberg:
         passes.RydbergRewrite(circuit)
-
-    print("Metrics after RydbergRewrite: ")
-    metrics.print_gate_counts(target.emit(circuit))
+        if printMetrics: 
+            print("Metrics after RydbergRewrite: ")
+            metrics.print_gate_counts(targetParallel.emit(circuit))
 
     if printSSA:
         print("After Rydberg: ")
@@ -71,14 +95,16 @@ if __name__ == "__main__":
 
     # Our second and bigger pass: merge U gates wherever possible to reduce their total count
     if doOurPasses_merge:
-        print("Metrics before MERGE: ")
-        metrics.print_gate_counts(target.emit(circuit))
+        if printMetrics: 
+            print("Metrics before MERGE: ")
+            metrics.print_gate_counts(targetParallel.emit(circuit))
 
         print("Merging ConsecutiveU")
         passes.MergeConsecutiveU(circuit.dialects)(circuit)
 
-        print("Metrics after MERGE: ")
-        metrics.print_gate_counts(target.emit(circuit))
+        if printMetrics: 
+            print("Metrics after MERGE: ")
+            metrics.print_gate_counts(targetParallel.emit(circuit))
     if printSSA:
         print("circuit after MERGE: ")
         circuit.print()
@@ -89,34 +115,37 @@ if __name__ == "__main__":
 
     if prettyDebug:
         sep_print("Unparallelized QASMTarget:", sleepTimeSec=1)
-        pprint(target.emit(circuit))
+        pprint(targetParallel.emit(circuit))
 
     # Now apply parallelization with native UOpToParallelise
     if doNativeParallelisation:
         passes.NativeParallelisationPass(circuit)
-        print("Metrics after nativeParallelise: ")          # gate count (parallel and standard) is output at each pass 
-        metrics.print_gate_counts(target.emit(circuit))
+        if printMetrics: 
+            print("Metrics after nativeParallelise: ")          # gate count (parallel and standard) is output at each pass 
+            metrics.print_gate_counts(targetParallel.emit(circuit))
 
     if prettyDebug:
         sep_print("NativeParallelised circuit: ", sleepTimeSec=2)
-        pprint(QASM2Target(allow_parallel=False).emit(circuit))
+        pprint(targetSequential.emit(circuit))
 
     
     if printSSA:
         circuit.print()
+    
+    if printMetrics: 
+        print("Final metrics: ")
+        metrics.print_gate_counts(targetParallel.emit(circuit))
 
     # Next output validation metrics
     qc_final = utils.circuit_to_qiskit(circuit)
 
-    fidelity = validate(qc_initial, qc_final)
+    validate(qc_initial, qc_final)
 
-    filepath = f"../out_compiler/{output_name}.qasm"                # Output file to qasm
+    filepath = output_folder + output_name   # Output file to qasm
     print("Exporting to QASM... ", filepath)
     with open(filepath, "w") as out:
-        out.write(QASM2Target(allow_parallel=False).emit_str(circuit))
-else:
-    print("Fidelity TOO LOW! Not exporting QASM")
+        out.write(targetSequential.emit_str(circuit))
     
 
 if __name__ == "__main__":
-    pass
+    main()

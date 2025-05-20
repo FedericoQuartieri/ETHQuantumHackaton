@@ -57,8 +57,6 @@ from computeProductMatrix import computeProductMatrix
 class Remove2PiGates(Pass):
 
     def unsafe_run(self, method: ir.Method):
-        print("Running unsafe run Remove2PiGates...")
-
         result = Walk(Simplify2PiConst()).rewrite(method.code)
 
         frame, _ = const.Propagate(self.dialects).run_analysis(method)
@@ -76,7 +74,7 @@ class Remove2PiGates(Pass):
 
 @dataclass
 class Simplify2PiConst(RewriteRule):
-    eps: float = 1e-13 # IMPORTANT! Not all constants are 100% accurate on 2pi
+    eps: float = 1e-11 # IMPORTANT! Not all constants are 100% accurate on 2pi
     def mod(self, a, b):
         if a < b:
             b -= self.eps
@@ -94,11 +92,8 @@ class Simplify2PiConst(RewriteRule):
                 if(stmt.theta == node.result):
                     periodicity = 4*math.pi
 
-
         if abs(node.value.unwrap()) < periodicity-self.eps:
             return RewriteResult()
-        
-
 
         used_in_U = False
         uses = node.result.uses
@@ -206,72 +201,3 @@ class UniteU3(RewriteRule):
         partner.delete()
 
         return RewriteResult(has_done_something=True)
-
-"""   
-    def rewrite_Statement(self, node: ir.Statement) -> RewriteResult:
-        if not isinstance(node, uop.UGate):
-            return RewriteResult()
-        
-        targ = node.args[0]
-        usesOfTarg = targ.uses
-        
-        firstUse : uop.UGate = None
-        
-        print("RUN UniteU3 on ", node.print_str())
-        print("Th hints = ", node.theta.hints)
-        for use in usesOfTarg:
-            if isinstance(use.stmt, uop.UGate) and use != node:
-                print("Check true use.owner==node.owner: ", use.stmt.args[0].owner == targ.owner)
-                firstUse = use.stmt
-                break
-        
-        if firstUse is None:
-            return RewriteResult()
-        
-        # Check if path node -> firstUse is free of other gates
-        stmt = node.next_stmt
-        if stmt is None:
-            return RewriteResult()
-        
-        while stmt is not None and not stmt.is_equal(firstUse): # Assume firstUse is successor of node
-            for use in usesOfTarg:
-                if stmt == use.stmt:
-                    print("Found a use of targ (before firstUse in a UGate) at ", stmt.print_str())
-                    return RewriteResult()
-            stmt = stmt.next_stmt
-        # Now we traversed node -> firstUse, no other gate is messing with target qubit
-
-        print("Continuin3")
-        mergedAngles = computeProductMatrix(
-                    node.theta.hints["const"].data, 
-                    node.phi.hints["const"].data, 
-                    node.lam.hints["const"].data, 
-                    firstUse.theta.hints["const"].data, 
-                    firstUse.phi.hints["const"].data, 
-                    firstUse.lam.hints["const"].data
-                )
-
-        # Print theta complex for validation
-        print("MergedTheta = ", mergedAngles[0])
-
-        newConstTheta = pyDialect.Constant(mergedAngles[0].real)
-        newConstPhi = pyDialect.Constant(mergedAngles[1])
-        newConstLam = pyDialect.Constant(mergedAngles[2])
-        newUGate = uop.UGate(targ, newConstTheta.result, newConstPhi.result, newConstLam.result)
-
-        newConstTheta.insert_before(node)
-        newConstPhi.insert_before(node)
-        newConstLam.insert_before(node)
-        node.replace_by(newUGate)
-        firstUse.delete()
-
-        return RewriteResult(has_done_something=True)
-"""
-
-
-class PostParallel_GlobalExtraction(RewriteRule):
-    def rewrite_Statement(self, node: ir.Statement):
-        if not isinstance(node, parallel.UGate):
-            return RewriteResult()
-        
-        totalQubits = 0
