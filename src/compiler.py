@@ -64,11 +64,10 @@ def optimize_qasm(circuit: Method, output_folder, output_name):
 
     targetParallel = QASM2Target(allow_parallel=True)
     targetSequential = QASM2Target(allow_parallel=False)
-    program_ast = targetParallel.emit(circuit)
 
     if prettyDebug:
         sep_print("Non-translated qasm:\n")
-        pprint(program_ast)
+        pprint(targetParallel.emit(circuit))
 
     ###########################################################################
 
@@ -77,7 +76,7 @@ def optimize_qasm(circuit: Method, output_folder, output_name):
     if doRydberg:
         passes.RydbergRewrite(circuit)
         if printMetrics: 
-            print("Metrics after RydbergRewrite: ")
+            sep_print("Metrics after RydbergRewrite: ")
             metrics.print_gate_counts(targetParallel.emit(circuit))
 
     if printSSA:
@@ -96,14 +95,14 @@ def optimize_qasm(circuit: Method, output_folder, output_name):
     # Our second and bigger pass: merge U gates wherever possible to reduce their total count
     if doOurPasses_merge:
         if printMetrics: 
-            print("Metrics before MERGE: ")
+            sep_print("Metrics before MERGE: ")
             metrics.print_gate_counts(targetParallel.emit(circuit))
 
         print("Merging ConsecutiveU")
         passes.MergeConsecutiveU(circuit.dialects)(circuit)
 
         if printMetrics: 
-            print("Metrics after MERGE: ")
+            sep_print("Metrics after MERGE: ")
             metrics.print_gate_counts(targetParallel.emit(circuit))
     if printSSA:
         print("circuit after MERGE: ")
@@ -121,7 +120,7 @@ def optimize_qasm(circuit: Method, output_folder, output_name):
     if doNativeParallelisation:
         passes.NativeParallelisationPass(circuit)
         if printMetrics: 
-            print("Metrics after nativeParallelise: ")          # gate count (parallel and standard) is output at each pass 
+            sep_print("Metrics after nativeParallelise: ")          # gate count (parallel and standard) is output at each pass 
             metrics.print_gate_counts(targetParallel.emit(circuit))
 
     if prettyDebug:
