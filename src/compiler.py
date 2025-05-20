@@ -4,7 +4,7 @@ import sys, os
 
 import passes
 import metrics
-from validate import validate, validateAncilla
+from validate import validate, validateAncillaExecute, validateAncilla
 from kirin.ir.method import Method
 
 from bloqade.qasm2.emit import QASM2 as QASM2Target # the QASM2 target
@@ -12,7 +12,7 @@ from bloqade.qasm2.parse import pprint # the QASM2 pretty printer
 
 prettyDebug = False  # if true print the QASM-style circuits at each optimization step
 printSSA = False    # if true prints the raw IR of kirin
-printMetrics = False
+printMetrics = True
 doPause = False     # if true pauses until input at each step
 
 doRydberg = True    # if true translates gates to the native set using the native rewrite pass
@@ -44,7 +44,7 @@ def main():
             qcImprov = utils.circuit_to_qiskit(circuit)
             print(f"Validating {name} against its original version...")
             if orgName == "1":
-                validateAncilla(qcOrg, qcImprov)
+                validateAncillaExecute(qcOrg, qcImprov)
             else: 
                 validate(qcOrg, qcImprov)
         print()
