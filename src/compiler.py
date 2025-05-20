@@ -4,7 +4,7 @@ import sys, os
 
 import passes
 import metrics
-from validate import validate, validateAncillaExecute, validateAncilla
+from validate import validate
 from kirin.ir.method import Method
 
 from bloqade.qasm2.emit import QASM2 as QASM2Target # the QASM2 target
@@ -12,14 +12,17 @@ from bloqade.qasm2.parse import pprint # the QASM2 pretty printer
 
 prettyDebug = False  # if true print the QASM-style circuits at each optimization step
 printSSA = False    # if true prints the raw IR of kirin
-printMetrics = True
+printMetrics = False
 doPause = False     # if true pauses until input at each step
 
 doRydberg = True    # if true translates gates to the native set using the native rewrite pass
 doNativeParallelisation = True  # if true applies the parallelisation with native UOpToParallelise
 
-doOurPasses = False         # if true apply our passes also outside the merge
+doOurPasses = True         # if true apply our passes also outside the merge
 doOurPasses_merge = True    # if true apply the merge pass
+
+validateExecute = True
+executeShots = 100000
 
 def main():
     if len(sys.argv) < 3:
@@ -35,7 +38,7 @@ def main():
 
     programs = utils.importQASM(input_folder)
     for name, circuit in programs.items():
-        #if not "1" in name: continue
+        #if not "2" in name: continue
 
         optimize_qasm(circuit, output_folder, name+".qasm")
         if name.endswith("_improved"):
@@ -44,9 +47,9 @@ def main():
             qcImprov = utils.circuit_to_qiskit(circuit)
             print(f"Validating {name} against its original version...")
             if orgName == "1":
-                validateAncillaExecute(qcOrg, qcImprov)
+                validate(qcOrg, qcImprov, ancilla=True, execute=validateExecute, shots=executeShots)
             else: 
-                validate(qcOrg, qcImprov)
+                validate(qcOrg, qcImprov, ancilla=False, execute=validateExecute, shots=executeShots)
         print()
     
 
@@ -139,7 +142,7 @@ def optimize_qasm(circuit: Method, output_folder, output_name):
     # Next output validation metrics
     qc_final = utils.circuit_to_qiskit(circuit)
 
-    validate(qc_initial, qc_final)
+    validate(qc_initial, qc_final, ancilla=False, execute=validateExecute, shots=executeShots)
 
     filepath = output_folder + output_name   # Output file to qasm
     print("Exporting to QASM... ", filepath)
