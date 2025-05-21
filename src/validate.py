@@ -18,14 +18,8 @@ from qiskit.quantum_info import Statevector, partial_trace, state_fidelity
 
 
 def parseResult(counts):
-    new_counts = {}
-    for key, value in counts.items():
-        # Rimuove spazi e calcola metà lunghezza
-        clean_key = key.replace(" ", "")
-        half_len = len(clean_key) // 2
-        trimmed_key = clean_key[:half_len]
-        new_counts[trimmed_key] = new_counts.get(trimmed_key, 0) + value
-    return new_counts
+
+    return counts
 
 def validate(qc1 : QuantumCircuit, qc2 : QuantumCircuit, ancilla = False):
     sv1 = Statevector.from_instruction(qc1)
@@ -81,14 +75,14 @@ def validateExecute(qc1, qc2, ancilla=True, shots = 100000):
     tqc1 = transpile(qc1, backend)
     result = backend.run(tqc1, shots=shots).result()
     q1_counts = parseResult(result.get_counts())
-    print(q1_counts)
+    #print(q1_counts)
     plot_histogram(q1_counts)
 
     qc2.measure_all()
     tqc2 = transpile(qc2, backend)
     result = backend.run(tqc2, shots=shots).result()
     q2_parsed = parseResult(result.get_counts())
-    print(q2_parsed)
+    #print(q2_parsed)
     plot_histogram(q2_parsed)
 
 
@@ -108,6 +102,11 @@ def validateExecute(qc1, qc2, ancilla=True, shots = 100000):
             q2_counts[formatted] = q2_counts.get(formatted, 0) + value
     else:
         q2_counts = q2_parsed
+
+    print(q2_parsed)
+    print(q2_counts)
+
+    
 
 
     accumulator = 0 
@@ -138,8 +137,8 @@ def validate(qc1, qc2, ancilla = False, execute = False, shots = 100000):
 if __name__ == "__main__":
     programs = importQASM("../inputs")
 
-    qc1 = circuit_to_qiskit(programs.get("1"))
-    qc2 = circuit_to_qiskit(programs.get("1_improved"))
+    qc1 = circuit_to_qiskit(programs.get("qft2"))
+    qc2 = circuit_to_qiskit(programs.get("qft2_improved"))
     print(validate(qc1, qc2, ancilla=True, execute=True, shots = 100000))
 
 
