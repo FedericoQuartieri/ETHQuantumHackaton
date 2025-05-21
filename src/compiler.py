@@ -18,7 +18,7 @@ doPause = False     # if true pauses until input at each step
 doRydberg = True    # if true translates gates to the native set using the native rewrite pass
 doNativeParallelisation = True  # if true applies the parallelisation with native UOpToParallelise
 
-doOurPasses = True         # if true apply our passes also outside the merge
+doOurPasses = False         # if true apply our passes also outside the merge
 doOurPasses_merge = True    # if true apply the merge pass
 
 validateExecute = True
@@ -47,9 +47,12 @@ def main():
             qcImprov = utils.circuit_to_qiskit(circuit)
             print(f"Validating {name} against its original version...")
             if orgName == "1":
-                validate(qcOrg, qcImprov, ancilla=True, execute=validateExecute, shots=executeShots)
+                validate(qcOrg, qcImprov, ancilla=True, execute=validateExecute, shots=executeShots, first=False, n = 1)
+            elif orgName == "qft2":
+                validate(qcOrg, qcImprov, ancilla=True, execute=True, shots = 100000, first=True, n = 3)
             else: 
                 validate(qcOrg, qcImprov, ancilla=False, execute=validateExecute, shots=executeShots)
+
         print()
     
 
