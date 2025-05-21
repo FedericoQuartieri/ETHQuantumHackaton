@@ -6,3 +6,5 @@ networkx==3.4.2
 numpy==2.2.5
 qiskit==2.0.0
 pylatexenc==2.10
+qiskit_aer==0.17.0
+qiskit_ibm_runtime==0.39.0

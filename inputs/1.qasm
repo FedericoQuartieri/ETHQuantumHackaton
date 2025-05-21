@@ -6,7 +6,6 @@ include "qelib1.inc";
 
 // Qubits: [q(0), q(1), q(2)]
 qreg q[3];
-creg c[3];
 
 
 h q[2];
