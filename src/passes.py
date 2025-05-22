@@ -114,6 +114,7 @@ class Simplify2PiConst(RewriteRule):
         
         return RewriteResult()
 
+@dataclass
 class FindAndSimplifyUGates(RewriteRule):
     def rewrite_Statement(self, node: ir.Statement) -> RewriteResult:
         if not isinstance(node, uop.UGate):
@@ -130,7 +131,7 @@ class FindAndSimplifyUGates(RewriteRule):
         node.delete()
         return RewriteResult(has_done_something=True)
 
-
+@dataclass
 class MergeConsecutiveU(Pass):
     def unsafe_run(self, method: ir.Method):
         print("Running unsafe run MergeConsecutiveU")
@@ -155,6 +156,7 @@ class MergeConsecutiveU(Pass):
         return result
     
     
+@dataclass
 class UniteU3(RewriteRule):
     def rewrite_Statement(self, node: ir.Statement) -> RewriteResult:
         if not isinstance(node, uop.UGate):

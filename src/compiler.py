@@ -12,13 +12,13 @@ from bloqade.qasm2.parse import pprint # the QASM2 pretty printer
 
 prettyDebug = False  # if true print the QASM-style circuits at each optimization step
 printSSA = False    # if true prints the raw IR of kirin
-printMetrics = False
+printMetrics = True
 doPause = False     # if true pauses until input at each step
 
 doRydberg = True    # if true translates gates to the native set using the native rewrite pass
 doNativeParallelisation = True  # if true applies the parallelisation with native UOpToParallelise
 
-doOurPasses = False         # if true apply our passes also outside the merge
+doOurPasses = True         # if true apply our passes also outside the merge
 doOurPasses_merge = True    # if true apply the merge pass
 
 validateExecute = True
