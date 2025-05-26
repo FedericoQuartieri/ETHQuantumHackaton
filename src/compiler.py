@@ -18,7 +18,7 @@ doPause = False     # if true pauses until input at each step
 doRydberg = True    # if true translates gates to the native set using the native rewrite pass
 doNativeParallelisation = True  # if true applies the parallelisation with native UOpToParallelise
 
-doOurPasses = True         # if true apply our passes also outside the merge
+doOurPasses = False         # if true apply our passes also outside the merge
 doOurPasses_merge = True    # if true apply the merge pass
 
 validateExecute = True
@@ -38,7 +38,7 @@ def main():
 
     programs = utils.importQASM(input_folder)
     for name, circuit in programs.items():
-        #if not "2" in name: continue
+        if not "4" in name: continue
 
         optimize_qasm(circuit, output_folder, name+".qasm")
         if name.endswith("_improved"):
