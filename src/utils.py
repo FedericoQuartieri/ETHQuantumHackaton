@@ -55,7 +55,6 @@ def importQASM(input_dir) -> dict[str, Any]:
 def circuit_to_qiskit(method: ir.Method) -> QuantumCircuit:
     # emit OpenQASM2 text
     qasm = QASM2Target(allow_parallel=False).emit_str(method)
-
     # parse into a Qiskit circuit
     return QuantumCircuit.from_qasm_str(qasm)
 
