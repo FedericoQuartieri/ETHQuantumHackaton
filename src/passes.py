@@ -136,6 +136,8 @@ class MergeConsecutiveU(Pass):
     def unsafe_run(self, method: ir.Method):
         print("Running unsafe run MergeConsecutiveU")
 
+        result = Fixpoint(Walk(CommonSubexpressionElimination())).rewrite(method.code)
+
         loop_res = RewriteResult(has_done_something=True)
         while loop_res.has_done_something:
             frame, _ = const.Propagate(self.dialects).run_analysis(method)
